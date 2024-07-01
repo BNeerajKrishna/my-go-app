@@ -35,12 +35,16 @@ func main() {
 		}
 
 		// Parse and execute the HTML template
-		tmpl := template.Must(template.ParseFiles("index.html"))
-		tmpl.Execute(w, data)
+		tmpl := template.Must(template.ParseFiles("static/index.html"))
+		err := tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	})
 
-	// Serve static files (like images)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	// Serve static files (like images, CSS, JavaScript, etc.)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	// Specify the port and start the server
 	port := ":5000"

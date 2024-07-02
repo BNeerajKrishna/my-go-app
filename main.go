@@ -2,52 +2,31 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"log"
-	"net"
 	"net/http"
+	"os"
 )
 
 func main() {
-	// Function to fetch the outbound IP address
-	getOutboundIP := func() net.IP {
-		conn, err := net.Dial("udp", "8.8.8.8:80")
-		if err != nil {
-			fmt.Println("Error determining IP:", err)
-			return nil
-		}
-		defer conn.Close()
 
-		localAddr := conn.LocalAddr().(*net.UDPAddr)
-		return localAddr.IP
-	}
+	// API routes
+	hostname, err := os.Hostname()
 
-	// Handler for the homepage
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Fetch the IP address
-		ipAddress := getOutboundIP()
+	// Serve files from static folder
+	http.Handle("/", http.FileServer(http.Dir("./static")))
 
-		// Prepare data for the template
-		data := struct {
-			IPAddress string
-		}{
-			IPAddress: ipAddress.String(),
-		}
-
-		// Parse and execute the HTML template
-		tmpl := template.Must(template.ParseFiles("static/index.html"))
-		err := tmpl.Execute(w, data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// Serve api /hi
+	http.HandleFunc("/host", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hi, hostname is %v and is error is %v\n", hostname, err)
 	})
 
-	// Serve static files (like images, CSS, JavaScript, etc.)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello")
+	})
 
-	// Specify the port and start the server
 	port := ":5000"
-	fmt.Println("Server is running on port", port)
+	fmt.Println("Server is running on port" + port )
+
+	// Start server on port specified above
 	log.Fatal(http.ListenAndServe(port, nil))
 }

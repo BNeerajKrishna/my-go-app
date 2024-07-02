@@ -1,0 +1,68 @@
+package main
+
+import (
+	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"os"
+)
+
+func main() {
+
+	// API routes
+	hostname, err := os.Hostname()
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Fetch hostname
+		hostname, err := os.Hostname()
+		if err != nil {
+			log.Println("Error fetching hostname:", err)
+			hostname = "Unknown"
+		}
+
+		// Define data to pass to HTML template
+		data := struct {
+			Hostname string
+		}{
+			Hostname: hostname,
+		}
+
+		// Parse HTML template
+		tmpl, err := template.New("index").Parse(`
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>Home</title>
+			</head>
+			<body>
+				<h2>Home page (IP address: {{.Hostname}})</h2>
+				<img src="images/one_piece.jpg" alt="image">
+			</body>
+			</html>
+		`)
+		if err != nil {
+			log.Println("Error parsing template:", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		// Execute HTML template with data
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			log.Println("Error executing template:", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+	})
+
+	// Serve api /hi
+	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hi, hostname is %v and is error is %v\n", hostname, err)
+	})
+
+	port := ":5000"
+	fmt.Println("Server is running on port" + port )
+
+	// Start server on port specified above
+	log.Fatal(http.ListenAndServe(port, nil))
+}
